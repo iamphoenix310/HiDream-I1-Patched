@@ -1,12 +1,10 @@
 import torch
 import argparse
-from hi_diffusers import HiDreamImagePipeline
+from hi_diffusers.pipelines.hidream_image.pipeline_hidream_image import HiDreamImagePipeline
+
 from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
-# inference.py
-from hi_diffusers.pipelines.hidream_image.pipeline_hidream_image import HiDreamImagePipeline
-
 from transformers import LlamaForCausalLM, PreTrainedTokenizerFast
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_type", type=str, default="dev")
