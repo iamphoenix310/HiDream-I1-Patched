@@ -26,6 +26,7 @@ class HiDreamAttnProcessor_torch:
         query_i = query_i.view(batch_size, -1, attn.heads, head_dim)
         key_i = key_i.view(batch_size, -1, attn.heads, head_dim)
         value_i = value_i.view(batch_size, -1, attn.heads, head_dim)
+
         if image_tokens_masks is not None:
             key_i = key_i * image_tokens_masks.view(batch_size, -1, 1, 1)
 
@@ -34,6 +35,6 @@ class HiDreamAttnProcessor_torch:
         attn_output = torch.einsum("bhqk,bkhd->bqhd", attn_probs, value_i)
 
         hidden_states = attn_output.flatten(2)
-        if not attn.single:
-            raise NotImplementedError("This fallback only supports single-stream attention for now.")
-        return attn.to_out(hidden_states)
+        hidden_states = attn.to_out(hidden_states)
+
+        return hidden_states
