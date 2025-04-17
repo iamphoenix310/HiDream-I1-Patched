@@ -26,7 +26,7 @@ seed = args.seed
 
 # ✅ Model Paths
 MODEL_PREFIX = "HiDream-ai"
-LLAMA_MODEL_NAME = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+LLAMA_MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
 
 MODEL_CONFIGS = {
     "dev": {
