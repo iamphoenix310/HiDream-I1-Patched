@@ -72,7 +72,7 @@ def load_models(model_type):
     # ✅ Load tokenizer with required flags
     tokenizer_4 = AutoTokenizer.from_pretrained(
     LLAMA_MODEL_NAME,
-    token=os.getenv("hf_token"),
+    token=os.getenv("HUGGINGFACE_HUB_TOKEN"),
     use_fast=False,
     trust_remote_code=True
     )
