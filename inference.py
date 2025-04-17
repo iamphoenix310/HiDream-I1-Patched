@@ -66,7 +66,14 @@ def load_models(model_type):
     config = MODEL_CONFIGS[model_type]
     scheduler = config["scheduler"](num_train_timesteps=1000, shift=config["shift"], use_dynamic_shifting=False)
     
-    tokenizer_4 = PreTrainedTokenizerFast.from_pretrained(LLAMA_MODEL_NAME, use_fast=False)
+    from transformers import AutoTokenizer
+    tokenizer_4 = AutoTokenizer.from_pretrained(
+    LLAMA_MODEL_NAME,
+    use_fast=False,
+    token=os.getenv("HUGGINGFACE_TOKEN"),
+    use_auth_token=True
+    )
+
     text_encoder_4 = LlamaForCausalLM.from_pretrained(
         LLAMA_MODEL_NAME, output_hidden_states=True, output_attentions=True,
         torch_dtype=torch.bfloat16).to("cuda")
