@@ -71,11 +71,12 @@ def load_models(model_type):
 
     # ✅ Load tokenizer with required flags
     tokenizer_4 = AutoTokenizer.from_pretrained(
-        LLAMA_MODEL_NAME,
-        token=os.getenv("HUGGINGFACE_TOKEN"),
-        use_fast=False,
-        trust_remote_code=True
+    LLAMA_MODEL_NAME,
+    token=os.getenv("HUGGINGFACE_TOKEN"),
+    use_fast=False,
+    trust_remote_code=True
     )
+
 
     # ✅ Load LLaMA model with remote code
     text_encoder_4 = LlamaForCausalLM.from_pretrained(
