@@ -1,5 +1,6 @@
 import torch
 import argparse
+import os
 from hi_diffusers.pipelines.hidream_image.pipeline_hidream_image import HiDreamImagePipeline
 from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
