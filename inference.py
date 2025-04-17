@@ -73,6 +73,7 @@ def load_models(model_type):
     use_fast=False,
     token=os.getenv("HUGGINGFACE_TOKEN"),
     use_auth_token=True
+    trust_remote_code=True  # ✅ THIS IS REQUIRED!
     )
 
     text_encoder_4 = LlamaForCausalLM.from_pretrained(
