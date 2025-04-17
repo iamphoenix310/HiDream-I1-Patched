@@ -69,30 +69,37 @@ def load_models(model_type):
     config = MODEL_CONFIGS[model_type]
     scheduler = config["scheduler"](num_train_timesteps=1000, shift=config["shift"], use_dynamic_shifting=False)
 
-    # ✅ Load tokenizer with required flags
+    # ✅ Load Hugging Face token securely
+    token = os.environ.get("HUGGINGFACE_HUB_TOKEN")
+    if not token:
+        raise EnvironmentError("❌ HUGGINGFACE_HUB_TOKEN not found in environment variables!")
+
+    # ✅ Load tokenizer with token and remote code access
     tokenizer_4 = AutoTokenizer.from_pretrained(
-    LLAMA_MODEL_NAME,
-    token=os.getenv("HUGGINGFACE_HUB_TOKEN"),
-    use_fast=False,
-    trust_remote_code=True
+        LLAMA_MODEL_NAME,
+        token=token,
+        use_fast=False,
+        trust_remote_code=True
     )
 
-
-    # ✅ Load LLaMA model with remote code
+    # ✅ Load LLaMA model with token
     text_encoder_4 = LlamaForCausalLM.from_pretrained(
         LLAMA_MODEL_NAME,
+        token=token,
         output_hidden_states=True,
         output_attentions=True,
         torch_dtype=torch.bfloat16,
         trust_remote_code=True
     ).to("cuda")
 
+    # ✅ Load HiDream image transformer
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
         config["path"],
         subfolder="transformer",
         torch_dtype=torch.bfloat16
     ).to("cuda")
 
+    # ✅ Load HiDream image pipeline
     pipe = HiDreamImagePipeline.from_pretrained(
         config["path"],
         scheduler=scheduler,
