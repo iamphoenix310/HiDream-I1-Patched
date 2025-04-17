@@ -88,7 +88,7 @@ def load_models(model_type):
         token=token,
         output_hidden_states=True,
         output_attentions=True,
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch.float32,  # Use float32 on CPU
         trust_remote_code=True
     ).to("cuda")
 
