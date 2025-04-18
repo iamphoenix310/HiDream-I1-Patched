@@ -27,7 +27,7 @@ seed = args.seed
 
 # ✅ Model Paths
 MODEL_PREFIX = "azaneko"
-LLAMA_MODEL_NAME = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
+LLAMA_MODEL_NAME = "nvidia/Llama-3.1-Nemotron-Nano-8B-v1"
 
 MODEL_CONFIGS = {
     "dev": {
