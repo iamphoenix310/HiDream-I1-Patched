@@ -6,7 +6,8 @@ from hi_diffusers.pipelines.hidream_image.pipeline_hidream_image import HiDreamI
 from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
-from transformers import LlamaForCausalLM, AutoTokenizer
+from transformers import AutoTokenizer
+from auto_gptq import AutoGPTQForCausalLM  # Needed for GPTQ models
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
@@ -25,26 +26,26 @@ resolution = args.resolution
 seed = args.seed
 
 # ✅ Model Paths
-MODEL_PREFIX = "HiDream-ai"
-LLAMA_MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
+MODEL_PREFIX = "azaneko"
+LLAMA_MODEL_NAME = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
 
 MODEL_CONFIGS = {
     "dev": {
-        "path": f"{MODEL_PREFIX}/HiDream-I1-Dev",
+        "path": f"{MODEL_PREFIX}/HiDream-I1-Dev-nf4",
         "guidance_scale": 0.0,
         "num_inference_steps": 28,
         "shift": 6.0,
         "scheduler": FlashFlowMatchEulerDiscreteScheduler
     },
     "full": {
-        "path": f"{MODEL_PREFIX}/HiDream-I1-Full",
+        "path": f"{MODEL_PREFIX}/HiDream-I1-Full-nf4",
         "guidance_scale": 5.0,
         "num_inference_steps": 50,
         "shift": 3.0,
         "scheduler": FlowUniPCMultistepScheduler
     },
     "fast": {
-        "path": f"{MODEL_PREFIX}/HiDream-I1-Fast",
+        "path": f"{MODEL_PREFIX}/HiDream-I1-Fast-nf4",
         "guidance_scale": 0.0,
         "num_inference_steps": 16,
         "shift": 3.0,
@@ -74,7 +75,7 @@ def load_models(model_type):
     if not token:
         raise EnvironmentError("❌ HUGGINGFACE_HUB_TOKEN not found in environment variables!")
 
-    # ✅ Load tokenizer with token and remote code access
+    # ✅ Load quantized tokenizer
     tokenizer_4 = AutoTokenizer.from_pretrained(
         LLAMA_MODEL_NAME,
         token=token,
@@ -82,24 +83,24 @@ def load_models(model_type):
         trust_remote_code=True
     )
 
-    # ✅ Load LLaMA model with token
-    text_encoder_4 = LlamaForCausalLM.from_pretrained(
+    # ✅ Load 4-bit quantized LLaMA model with AutoGPTQ
+    text_encoder_4 = AutoGPTQForCausalLM.from_quantized(
         LLAMA_MODEL_NAME,
         token=token,
-        output_hidden_states=True,
-        output_attentions=True,
-        torch_dtype=torch.float32,  # Use float32 on CPU
-        trust_remote_code=True
-    ).to("cuda")
+        use_safetensors=True,
+        trust_remote_code=True,
+        device="cpu",  # ⬅️ Keep on CPU to avoid VRAM overflow
+        torch_dtype=torch.float32
+    )
 
-    # ✅ Load HiDream image transformer
+    # ✅ Load HiDream Transformer (quantized NF4)
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
         config["path"],
         subfolder="transformer",
         torch_dtype=torch.bfloat16
     ).to("cuda")
 
-    # ✅ Load HiDream image pipeline
+    # ✅ Load HiDream Image Pipeline
     pipe = HiDreamImagePipeline.from_pretrained(
         config["path"],
         scheduler=scheduler,
