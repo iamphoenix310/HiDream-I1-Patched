@@ -27,8 +27,10 @@ seed = args.seed
 
 # ✅ Model paths
 MODEL_PREFIX = "azaneko"
-LLAMA_MODEL_NAME = "OxxoCodes/Meta-Llama-3-8B-Instruct-GPTQ"
-LLAMA_TOKENIZER_NAME = "meta-llama/Llama-3-8B-Instruct"
+# ✅ Change model name
+LLAMA_MODEL_NAME = "meta-llama/Llama-4-Scout-17B-16E-Instruct"
+LLAMA_TOKENIZER_NAME = "meta-llama/Llama-4-Scout-17B-16E-Instruct"
+
 
 MODEL_CONFIGS = {
     "dev": {
