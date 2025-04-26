@@ -741,8 +741,8 @@ class HiDreamImagePipeline(DiffusionPipeline, FromSingleFileMixin):
                 images = images.to(torch.float32)
             images = images.cpu().permute(0, 2, 3, 1).numpy()
             images = (images * 255).round().astype("uint8")
-        from PIL import Image
-        pil_images = [Image.fromarray(image) for image in images]
-        return pil_images
+            from PIL import Image
+            pil_images = [Image.fromarray(image) for image in images]
+            return pil_images
 
     
