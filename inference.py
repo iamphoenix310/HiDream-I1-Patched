@@ -62,7 +62,7 @@ def load_models(model_type, prompt: str):
     if not token:
         raise EnvironmentError("❌ HUGGINGFACE_HUB_TOKEN not found!")
 
-    # ✅ Load tokenizer
+    # Load tokenizer
     tokenizer_4 = AutoTokenizer.from_pretrained(
         LLAMA_TOKENIZER_NAME,
         token=token,
@@ -71,7 +71,7 @@ def load_models(model_type, prompt: str):
         model_max_length=77
     )
 
-    # ✅ Load text encoder
+    # Load text encoder
     text_encoder_4 = AutoModelForCausalLM.from_pretrained(
         LLAMA_MODEL_NAME,
         token=token,
@@ -81,7 +81,7 @@ def load_models(model_type, prompt: str):
     )
     text_encoder_4.config.attn_implementation = "eager"
 
-    # ✅ Handle prompt length
+    # Handle prompt length
     with torch.no_grad():
         dummy = tokenizer_4(prompt, return_tensors="pt", truncation=False).to("cuda")
         token_length = dummy['input_ids'].shape[1]
@@ -92,21 +92,23 @@ def load_models(model_type, prompt: str):
         encoder_out = text_encoder_4(**dummy, output_hidden_states=True)
         print("✅ Encoder output shape:", encoder_out.hidden_states[-1].shape)
 
-    # ✅ Load transformer and immediately move to CUDA
+    # Load transformer safely
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
         config["path"],
         subfolder="transformer",
-        torch_dtype=torch.bfloat16
-    ).to(device="cuda", dtype=torch.bfloat16)
+        torch_dtype=torch.bfloat16,
+        device_map={"": "cpu"}  # ✅ Force CPU loading
+    )
 
-    # ✅ Load VAE and immediately move to CUDA
+    # Load VAE safely
     vae = AutoencoderKL.from_pretrained(
         config["path"],
         subfolder="vae",
-        torch_dtype=torch.bfloat16
-    ).to(device="cuda", dtype=torch.bfloat16)
+        torch_dtype=torch.bfloat16,
+        device_map={"": "cpu"}  # ✅ Force CPU loading
+    )
 
-    # ✅ Now safely build pipeline
+    # Build pipeline
     pipe = HiDreamImagePipeline(
         scheduler=scheduler,
         vae=vae,
@@ -119,7 +121,12 @@ def load_models(model_type, prompt: str):
         text_encoder_4=text_encoder_4,
         tokenizer_4=tokenizer_4,
     )
+
     pipe.transformer = transformer
+
+    # Move to GPU manually
+    pipe.vae = pipe.vae.to("cuda", torch_dtype=torch.bfloat16)
+    pipe.transformer = pipe.transformer.to("cuda", torch_dtype=torch.bfloat16)
 
     return pipe, config
 
