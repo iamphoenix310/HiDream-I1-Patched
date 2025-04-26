@@ -28,7 +28,7 @@ seed = args.seed
 # ✅ Model Paths
 MODEL_PREFIX = "azaneko"
 LLAMA_MODEL_NAME = "OxxoCodes/Meta-Llama-3-8B-Instruct-GPTQ"
-LLAMA_TOKENIZER_NAME = "meta-llama/Llama-3-8b"  # ✅ correct tokenizer
+LLAMA_TOKENIZER_NAME = "meta-llama/Meta-Llama-3-8B-Instruct"  # Correct tokenizer!
 
 MODEL_CONFIGS = {
     "dev": {
@@ -76,7 +76,7 @@ def load_models(model_type):
     if not token:
         raise EnvironmentError("❌ HUGGINGFACE_HUB_TOKEN not found in environment variables!")
 
-    # ✅ Load tokenizer from BASE MODEL (meta-llama/Llama-3-8b)
+    # ✅ Load tokenizer from correct Llama3 Instruct base
     tokenizer_4 = AutoTokenizer.from_pretrained(
         LLAMA_TOKENIZER_NAME,
         token=token,
@@ -84,7 +84,7 @@ def load_models(model_type):
         trust_remote_code=True
     )
 
-    # ✅ Load quantized LLaMA model with AutoGPTQ
+    # ✅ Load quantized Llama3 GPTQ model
     text_encoder_4 = AutoGPTQForCausalLM.from_quantized(
         LLAMA_MODEL_NAME,
         use_safetensors=True,
@@ -93,7 +93,7 @@ def load_models(model_type):
         torch_dtype=torch.float16
     )
 
-    # ✅ Load HiDream Transformer (quantized NF4)
+    # ✅ Load HiDream Transformer (NF4 quantized)
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
         config["path"],
         subfolder="transformer",
