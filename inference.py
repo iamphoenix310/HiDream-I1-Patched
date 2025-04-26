@@ -6,9 +6,7 @@ from hi_diffusers.pipelines.hidream_image.pipeline_hidream_image import HiDreamI
 from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
-from transformers import AutoTokenizer
-from transformers import AutoModelForCausalLM
-
+from transformers import AutoTokenizer, AutoModelForCausalLM  # ✅ Use Huggingface now
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
@@ -19,52 +17,24 @@ parser.add_argument("--resolution", type=str, default="1024x1024")
 parser.add_argument("--seed", type=int, default=-1)
 args = parser.parse_args()
 
-# ✅ Extract args
 model_type = args.model_type
 prompt = args.prompt
 output_path = args.output_path
 resolution = args.resolution
 seed = args.seed
 
-# ✅ Model paths
-MODEL_PREFIX = "azaneko"  # 👈 This is your Sanity / HiDream model prefix
+MODEL_PREFIX = "azaneko"
 LLAMA_MODEL_NAME = "TheBloke/LLaMA-Pro-8B-Instruct-GPTQ"
 LLAMA_TOKENIZER_NAME = "TheBloke/LLaMA-Pro-8B-Instruct-GPTQ"
 
 MODEL_CONFIGS = {
-    "dev": {
-        "path": f"{MODEL_PREFIX}/HiDream-I1-Dev-nf4",
-        "guidance_scale": 0.0,
-        "num_inference_steps": 28,
-        "shift": 6.0,
-        "scheduler": FlashFlowMatchEulerDiscreteScheduler
-    },
-    "full": {
-        "path": f"{MODEL_PREFIX}/HiDream-I1-Full-nf4",
-        "guidance_scale": 5.0,
-        "num_inference_steps": 50,
-        "shift": 3.0,
-        "scheduler": FlowUniPCMultistepScheduler
-    },
-    "fast": {
-        "path": f"{MODEL_PREFIX}/HiDream-I1-Fast-nf4",
-        "guidance_scale": 0.0,
-        "num_inference_steps": 16,
-        "shift": 3.0,
-        "scheduler": FlashFlowMatchEulerDiscreteScheduler
-    }
+    "dev": {...},
+    "full": {...},
+    "fast": {...}
 }
 
 def parse_resolution(resolution_str):
-    options = {
-        "1024x1024": (1024, 1024),
-        "768x1360": (768, 1360),
-        "1360x768": (1360, 768),
-        "880x1168": (880, 1168),
-        "1168x880": (1168, 880),
-        "1248x832": (1248, 832),
-        "832x1248": (832, 1248),
-    }
+    options = {...}
     return options.get(resolution_str, (1024, 1024))
 
 def load_models(model_type):
@@ -72,36 +42,31 @@ def load_models(model_type):
     config = MODEL_CONFIGS[model_type]
     scheduler = config["scheduler"](num_train_timesteps=1000, shift=config["shift"], use_dynamic_shifting=False)
 
-    token = os.environ.get("HF_TOKEN")  # ✅ Correct variable name
+    token = os.environ.get("HF_TOKEN")
     if not token:
         raise EnvironmentError("❌ HUGGINGFACE_HUB_TOKEN not found!")
 
-    # ✅ Load tokenizer
     tokenizer_4 = AutoTokenizer.from_pretrained(
         LLAMA_TOKENIZER_NAME,
         token=token,
-        use_fast=True,  # ✅ Faster tokenizer
+        use_fast=True,
         trust_remote_code=True
     )
 
-    # ✅ Load quantized model
     text_encoder_4 = AutoModelForCausalLM.from_pretrained(
         LLAMA_MODEL_NAME,
         token=token,
-        revision="gptq-4bit-32g-actorder_True",  # ✅ Best quality + speed
-        device="cuda",
         torch_dtype=torch.float16,
+        device_map="auto",
         trust_remote_code=True
     )
 
-    # ✅ Load HiDream Transformer
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
         config["path"],
         subfolder="transformer",
         torch_dtype=torch.bfloat16
     ).to("cuda")
 
-    # ✅ Load HiDream full pipeline
     pipe = HiDreamImagePipeline.from_pretrained(
         config["path"],
         scheduler=scheduler,
@@ -134,13 +99,11 @@ def generate_image(pipe, model_type, prompt, resolution, seed):
 
     return images[0], seed
 
-# ✅ Main execution
 print(f"🔧 Preparing HiDream with model type: {model_type}")
 pipe, _ = load_models(model_type)
 print("🖼 Generating image...")
 image, used_seed = generate_image(pipe, model_type, prompt, resolution, seed)
 
-# ✅ Save output
 output_path = Path(output_path)
 output_path.parent.mkdir(parents=True, exist_ok=True)
 image.save(output_path)
