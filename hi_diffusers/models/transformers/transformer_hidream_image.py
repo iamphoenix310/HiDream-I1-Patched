@@ -173,10 +173,10 @@ class HiDreamImageTransformerBlock(nn.Module):
         )
     
         if isinstance(attn_outputs, tuple):
-        attn_output_i, attn_output_t = attn_outputs
+            attn_output_i, attn_output_t = attn_outputs
         else:
-        attn_output_i = attn_outputs
-        attn_output_t = attn_outputs
+            attn_output_i = attn_outputs
+            attn_output_t = attn_outputs
 
 
         image_tokens = gate_msa_i * attn_output_i + image_tokens
