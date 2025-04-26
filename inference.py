@@ -7,7 +7,8 @@ from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
 from transformers import AutoTokenizer
-from gptq import AutoGPTQForCausalLM
+from transformers import AutoModelForCausalLM
+
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
@@ -84,7 +85,7 @@ def load_models(model_type):
     )
 
     # ✅ Load quantized model
-    text_encoder_4 = AutoGPTQForCausalLM.from_quantized(
+    text_encoder_4 = AutoModelForCausalLM.from_pretrained(
         LLAMA_MODEL_NAME,
         token=token,
         revision="gptq-4bit-32g-actorder_True",  # ✅ Best quality + speed
