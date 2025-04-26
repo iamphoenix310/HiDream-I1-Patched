@@ -8,7 +8,7 @@ from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from torchvision import transforms
-from diffusers import AutoencoderKL  # ✅ Fixed VAE import
+from diffusers import AutoencoderKL
 
 # ✅ Argument parsing
 parser = argparse.ArgumentParser()
@@ -92,20 +92,21 @@ def load_models(model_type, prompt: str):
         encoder_out = text_encoder_4(**dummy, output_hidden_states=True)
         print("✅ Encoder output shape:", encoder_out.hidden_states[-1].shape)
 
-    # ✅ Load transformer and VAE on CPU first
+    # ✅ Load transformer and immediately move to CUDA
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
         config["path"],
         subfolder="transformer",
         torch_dtype=torch.bfloat16
-    ).cpu()
+    ).to(device="cuda", dtype=torch.bfloat16)
 
+    # ✅ Load VAE and immediately move to CUDA
     vae = AutoencoderKL.from_pretrained(
         config["path"],
         subfolder="vae",
         torch_dtype=torch.bfloat16
-    ).cpu()
+    ).to(device="cuda", dtype=torch.bfloat16)
 
-    # ✅ Build pipeline
+    # ✅ Now safely build pipeline
     pipe = HiDreamImagePipeline(
         scheduler=scheduler,
         vae=vae,
@@ -118,12 +119,7 @@ def load_models(model_type, prompt: str):
         text_encoder_4=text_encoder_4,
         tokenizer_4=tokenizer_4,
     )
-
     pipe.transformer = transformer
-
-    # ✅ Move components to CUDA with correct syntax
-    pipe.vae = pipe.vae.to(device="cuda", dtype=torch.bfloat16)
-    pipe.transformer = pipe.transformer.to(device="cuda", dtype=torch.bfloat16)
 
     return pipe, config
 
