@@ -28,8 +28,8 @@ seed = args.seed
 
 # ✅ Model paths
 MODEL_PREFIX = "azaneko"
-LLAMA_MODEL_NAME = "TheBloke/LLaMA-Pro-8B-Instruct-GPTQ"
-LLAMA_TOKENIZER_NAME = "TheBloke/LLaMA-Pro-8B-Instruct-GPTQ"
+LLAMA_MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
+LLAMA_TOKENIZER_NAME = "meta-llama/Llama-3.1-8B-Instruct"
 
 MODEL_CONFIGS = {
     "dev": {
