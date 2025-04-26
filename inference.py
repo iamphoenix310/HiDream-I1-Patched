@@ -6,8 +6,7 @@ from hi_diffusers.pipelines.hidream_image.pipeline_hidream_image import HiDreamI
 from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
-from transformers import AutoTokenizer
-from optimum.gptq import GPTQModelForCausalLM  # ✅ Use GPTQModel (future proof)
+from transformers import AutoTokenizer, GPTQModelForCausalLM  # ✅ correct import
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
@@ -18,7 +17,6 @@ parser.add_argument("--resolution", type=str, default="1024x1024")
 parser.add_argument("--seed", type=int, default=-1)
 args = parser.parse_args()
 
-# ✅ Extract arguments
 model_type = args.model_type
 prompt = args.prompt
 output_path = args.output_path
