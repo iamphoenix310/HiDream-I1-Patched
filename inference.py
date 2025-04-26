@@ -6,7 +6,8 @@ from hi_diffusers.pipelines.hidream_image.pipeline_hidream_image import HiDreamI
 from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
-from transformers import AutoTokenizer, GPTQModelForCausalLM  # ✅ correct import
+from transformers import AutoTokenizer
+from auto_gptq import AutoGPTQForCausalLM  # ✅ AutoGPTQ for now (no GPTQModel yet)
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
@@ -80,11 +81,11 @@ def load_models(model_type):
         trust_remote_code=True
     )
 
-    text_encoder_4 = GPTQModelForCausalLM.from_pretrained(
+    text_encoder_4 = AutoGPTQForCausalLM.from_quantized(
         LLAMA_MODEL_NAME,
         token=token,
         trust_remote_code=True,
-        device_map="cuda",
+        device="cuda",
         torch_dtype=torch.float16
     )
 
