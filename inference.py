@@ -7,7 +7,7 @@ from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
 from transformers import AutoTokenizer
-from auto_gptq import AutoGPTQForCausalLM  # ✅ AutoGPTQ for now (no GPTQModel yet)
+from auto_gptq import AutoGPTQForCausalLM  # ✅ Using AutoGPTQ properly
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
@@ -18,16 +18,17 @@ parser.add_argument("--resolution", type=str, default="1024x1024")
 parser.add_argument("--seed", type=int, default=-1)
 args = parser.parse_args()
 
+# ✅ Extracted args
 model_type = args.model_type
 prompt = args.prompt
 output_path = args.output_path
 resolution = args.resolution
 seed = args.seed
 
-# ✅ Model Paths
+# ✅ Model paths
 MODEL_PREFIX = "azaneko"
 LLAMA_MODEL_NAME = "OxxoCodes/Meta-Llama-3-8B-Instruct-GPTQ"
-LLAMA_TOKENIZER_NAME = "meta-llama/Meta-Llama-3-8B-Instruct"
+LLAMA_TOKENIZER_NAME = "meta-llama/Llama-3-8B-Instruct"
 
 MODEL_CONFIGS = {
     "dev": {
@@ -74,6 +75,7 @@ def load_models(model_type):
     if not token:
         raise EnvironmentError("❌ HUGGINGFACE_HUB_TOKEN not found!")
 
+    # Load tokenizer
     tokenizer_4 = AutoTokenizer.from_pretrained(
         LLAMA_TOKENIZER_NAME,
         token=token,
@@ -81,6 +83,7 @@ def load_models(model_type):
         trust_remote_code=True
     )
 
+    # Load quantized Llama model
     text_encoder_4 = AutoGPTQForCausalLM.from_quantized(
         LLAMA_MODEL_NAME,
         token=token,
@@ -89,12 +92,14 @@ def load_models(model_type):
         torch_dtype=torch.float16
     )
 
+    # Load HiDream Transformer
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
         config["path"],
         subfolder="transformer",
         torch_dtype=torch.bfloat16
     ).to("cuda")
 
+    # Load HiDream Pipeline
     pipe = HiDreamImagePipeline.from_pretrained(
         config["path"],
         scheduler=scheduler,
@@ -127,12 +132,13 @@ def generate_image(pipe, model_type, prompt, resolution, seed):
 
     return images[0], seed
 
-# ✅ MAIN EXECUTION
+# ✅ Main execution
 print(f"🔧 Preparing HiDream with model type: {model_type}")
 pipe, _ = load_models(model_type)
 print("🖼 Generating image...")
 image, used_seed = generate_image(pipe, model_type, prompt, resolution, seed)
 
+# ✅ Save output
 output_path = Path(output_path)
 output_path.parent.mkdir(parents=True, exist_ok=True)
 image.save(output_path)
