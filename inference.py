@@ -7,6 +7,9 @@ from hi_diffusers.models.transformers.transformer_hidream_image import HiDreamIm
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from torchvision import transforms
+
+
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
@@ -139,7 +142,10 @@ def generate_image(pipe, model_type, prompt, resolution, seed):
         num_images_per_prompt=1,
         generator=generator
     )
-    print("📸 Image tensor std dev:", result.images[0].std())
+    # Add this globally once
+    pil_to_tensor = transforms.ToTensor()
+    tensor_img = pil_to_tensor(result.images[0])
+    print("📸 Image tensor std dev:", tensor_img.std())
     return result.images[0], seed
 
 # ✅ Main execution
