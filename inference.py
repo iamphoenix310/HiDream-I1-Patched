@@ -13,7 +13,7 @@ from torchvision import transforms
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_type", type=str, default="dev")
+parser.add_argument("--model_type", type=str, default="fast")
 parser.add_argument("--prompt", type=str, required=True)
 parser.add_argument("--output_path", type=str, required=True)
 parser.add_argument("--resolution", type=str, default="1024x1024")
@@ -28,27 +28,13 @@ resolution = args.resolution
 seed = args.seed
 
 # ✅ Model paths
-MODEL_PREFIX = "azaneko"
+MODEL_PREFIX = "HiDream-ai"
 LLAMA_MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
 LLAMA_TOKENIZER_NAME = "meta-llama/Llama-3.1-8B-Instruct"
 
 MODEL_CONFIGS = {
-    "dev": {
-        "path": f"{MODEL_PREFIX}/HiDream-I1-Dev-nf4",
-        "guidance_scale": 0.0,
-        "num_inference_steps": 28,
-        "shift": 6.0,
-        "scheduler": FlashFlowMatchEulerDiscreteScheduler
-    },
-    "full": {
-        "path": f"{MODEL_PREFIX}/HiDream-I1-Full-nf4",
-        "guidance_scale": 5.0,
-        "num_inference_steps": 50,
-        "shift": 3.0,
-        "scheduler": FlowUniPCMultistepScheduler
-    },
     "fast": {
-        "path": f"{MODEL_PREFIX}/HiDream-I1-Fast-nf4",
+        "path": f"{MODEL_PREFIX}/HiDream-I1-Fast",
         "guidance_scale": 0.0,
         "num_inference_steps": 16,
         "shift": 3.0,
