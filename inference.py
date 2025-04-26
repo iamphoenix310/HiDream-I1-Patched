@@ -7,7 +7,7 @@ from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
 from transformers import AutoTokenizer
-from auto_gptq import AutoGPTQForCausalLM
+from awq import AutoAWQForCausalLM
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
@@ -27,8 +27,7 @@ seed = args.seed
 
 # ✅ Model Paths
 MODEL_PREFIX = "azaneko"
-LLAMA_MODEL_NAME = "OxxoCodes/Meta-Llama-3-8B-Instruct-GPTQ"
-LLAMA_TOKENIZER_NAME = "meta-llama/Llama-3.1-8B-Instruct"  # Correct tokenizer!
+LLAMA_MODEL_NAME = "hugging-quants/Meta-Llama-3.1-8B-Instruct-AWQ-INT4"
 
 MODEL_CONFIGS = {
     "dev": {
@@ -76,24 +75,23 @@ def load_models(model_type):
     if not token:
         raise EnvironmentError("❌ HUGGINGFACE_HUB_TOKEN not found in environment variables!")
 
-    # ✅ Load tokenizer from correct Llama3 Instruct base
+    # ✅ Load tokenizer
     tokenizer_4 = AutoTokenizer.from_pretrained(
-        LLAMA_TOKENIZER_NAME,
+        LLAMA_MODEL_NAME,
         token=token,
         use_fast=False,
         trust_remote_code=True
     )
 
-    # ✅ Load quantized Llama3 GPTQ model
-    text_encoder_4 = AutoGPTQForCausalLM.from_quantized(
+    # ✅ Load AWQ quantized model
+    text_encoder_4 = AutoAWQForCausalLM.from_pretrained(
         LLAMA_MODEL_NAME,
-        use_safetensors=True,
-        trust_remote_code=True,
-        device="cuda",
-        torch_dtype=torch.float16
+        torch_dtype=torch.float16,
+        low_cpu_mem_usage=True,
+        device_map="cuda"
     )
 
-    # ✅ Load HiDream Transformer (NF4 quantized)
+    # ✅ Load HiDream Transformer
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
         config["path"],
         subfolder="transformer",
