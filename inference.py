@@ -87,7 +87,7 @@ def load_models(model_type):
         device_map="auto",
         torch_dtype=torch.bfloat16,
         trust_remote_code=True,
-        attn_implementation="eager",   # ✅ JUST ADD THIS
+        attn_implementation="eager"   # ✅ JUST ADD THIS
 
     )
 
