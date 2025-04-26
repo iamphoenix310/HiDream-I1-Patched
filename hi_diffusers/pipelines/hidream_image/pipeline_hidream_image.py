@@ -541,11 +541,12 @@ class HiDreamImagePipeline(DiffusionPipeline, FromSingleFileMixin):
         height = height or self.default_sample_size * self.vae_scale_factor
         width = width or self.default_sample_size * self.vae_scale_factor
 
+        # ✅ Force align height and width to nearest divisible value by vae_scale_factor * 2
         division = self.vae_scale_factor * 2
-        S_max = (self.default_sample_size * self.vae_scale_factor) ** 2
-        scale = S_max / (width * height)
-        scale = math.sqrt(scale)
-        width, height = int(width * scale // division * division), int(height * scale // division * division)
+        height = (height // division) * division
+        width = (width // division) * division
+        print(f"✅ Corrected resolution: {width}x{height}")
+
 
         self._guidance_scale = guidance_scale
         self._joint_attention_kwargs = joint_attention_kwargs
