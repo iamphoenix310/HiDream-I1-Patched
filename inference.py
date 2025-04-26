@@ -73,7 +73,7 @@ def load_models(model_type):
     config = MODEL_CONFIGS[model_type]
     scheduler = config["scheduler"](num_train_timesteps=1000, shift=config["shift"], use_dynamic_shifting=False)
 
-    token = os.environ.get("HUGGINGFACE_HUB_TOKEN")
+    token = os.environ.get("HF_TOKEN")
     if not token:
         raise EnvironmentError("❌ HUGGINGFACE_HUB_TOKEN not found!")
 
