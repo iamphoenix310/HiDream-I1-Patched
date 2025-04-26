@@ -180,7 +180,10 @@ class HiDreamImageTransformerBlock(nn.Module):
 
 
         image_tokens = gate_msa_i * attn_output_i + image_tokens
-        text_tokens = gate_msa_t * attn_output_t + text_tokens
+        if attn_output_t.shape[1] == text_tokens.shape[1]:
+            text_tokens = gate_msa_t * attn_output_t + text_tokens
+        else:
+            text_tokens = gate_msa_t * attn_output_t
         
         # 2. Feed-forward
         norm_image_tokens = self.norm3_i(image_tokens).to(dtype=wtype)
