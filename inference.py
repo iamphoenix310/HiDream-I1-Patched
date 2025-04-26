@@ -86,7 +86,9 @@ def load_models(model_type):
         token=token,
         device_map="auto",
         torch_dtype=torch.bfloat16,
-        trust_remote_code=True
+        trust_remote_code=True,
+        attn_implementation="eager",   # ✅ JUST ADD THIS
+
     )
 
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
