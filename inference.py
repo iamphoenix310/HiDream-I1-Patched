@@ -7,7 +7,7 @@ from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
 from transformers import AutoTokenizer
-from auto_gptq import AutoGPTQForCausalLM  # ✅ Using AutoGPTQ properly
+from auto_gptq import AutoGPTQForCausalLM  # ✅ Correct import
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
@@ -18,7 +18,7 @@ parser.add_argument("--resolution", type=str, default="1024x1024")
 parser.add_argument("--seed", type=int, default=-1)
 args = parser.parse_args()
 
-# ✅ Extracted args
+# ✅ Extract args
 model_type = args.model_type
 prompt = args.prompt
 output_path = args.output_path
@@ -26,11 +26,9 @@ resolution = args.resolution
 seed = args.seed
 
 # ✅ Model paths
-MODEL_PREFIX = "azaneko"
-# ✅ Change model name
-LLAMA_MODEL_NAME = "meta-llama/Llama-3.1-8B"
-LLAMA_TOKENIZER_NAME = "meta-llama/Llama-3.1-8B"
-
+MODEL_PREFIX = "azaneko"  # 👈 This is your Sanity / HiDream model prefix
+LLAMA_MODEL_NAME = "TheBloke/LLaMA-Pro-8B-Instruct-GPTQ"
+LLAMA_TOKENIZER_NAME = "TheBloke/LLaMA-Pro-8B-Instruct-GPTQ"
 
 MODEL_CONFIGS = {
     "dev": {
@@ -73,35 +71,36 @@ def load_models(model_type):
     config = MODEL_CONFIGS[model_type]
     scheduler = config["scheduler"](num_train_timesteps=1000, shift=config["shift"], use_dynamic_shifting=False)
 
-    token = os.environ.get("HF_TOKEN")
+    token = os.environ.get("HF_TOKEN")  # ✅ Correct variable name
     if not token:
         raise EnvironmentError("❌ HUGGINGFACE_HUB_TOKEN not found!")
 
-    # Load tokenizer
+    # ✅ Load tokenizer
     tokenizer_4 = AutoTokenizer.from_pretrained(
         LLAMA_TOKENIZER_NAME,
         token=token,
-        use_fast=False,
+        use_fast=True,  # ✅ Faster tokenizer
         trust_remote_code=True
     )
 
-    # Load quantized Llama model
+    # ✅ Load quantized model
     text_encoder_4 = AutoGPTQForCausalLM.from_quantized(
         LLAMA_MODEL_NAME,
         token=token,
-        trust_remote_code=True,
+        revision="gptq-4bit-32g-actorder_True",  # ✅ Best quality + speed
         device="cuda",
-        torch_dtype=torch.float16
+        torch_dtype=torch.float16,
+        trust_remote_code=True
     )
 
-    # Load HiDream Transformer
+    # ✅ Load HiDream Transformer
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
         config["path"],
         subfolder="transformer",
         torch_dtype=torch.bfloat16
     ).to("cuda")
 
-    # Load HiDream Pipeline
+    # ✅ Load HiDream full pipeline
     pipe = HiDreamImagePipeline.from_pretrained(
         config["path"],
         scheduler=scheduler,
