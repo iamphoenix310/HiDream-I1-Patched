@@ -28,8 +28,8 @@ seed = args.seed
 # ✅ Model paths
 MODEL_PREFIX = "azaneko"
 # ✅ Change model name
-LLAMA_MODEL_NAME = "meta-llama/Llama-3.2-3B-Instruct"
-LLAMA_TOKENIZER_NAME = "meta-llama/Llama-3.2-3B-Instruct"
+LLAMA_MODEL_NAME = "meta-llama/Llama-3.1-8B"
+LLAMA_TOKENIZER_NAME = "meta-llama/Llama-3.1-8B"
 
 
 MODEL_CONFIGS = {
