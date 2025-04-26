@@ -165,12 +165,19 @@ class HiDreamImageTransformerBlock(nn.Module):
         norm_text_tokens = self.norm1_t(text_tokens).to(dtype=wtype)
         norm_text_tokens = norm_text_tokens * (1 + scale_msa_t) + shift_msa_t
 
-        attn_output_i, attn_output_t = self.attn1(
-            norm_image_tokens,
-            image_tokens_masks,
-            norm_text_tokens,
-            rope = rope,
+        attn_outputs = self.attn1(
+        norm_image_tokens,
+        image_tokens_masks,
+        norm_text_tokens,
+        rope=rope,
         )
+    
+        if isinstance(attn_outputs, tuple):
+        attn_output_i, attn_output_t = attn_outputs
+        else:
+        attn_output_i = attn_outputs
+        attn_output_t = attn_outputs
+
 
         image_tokens = gate_msa_i * attn_output_i + image_tokens
         text_tokens = gate_msa_t * attn_output_t + text_tokens
