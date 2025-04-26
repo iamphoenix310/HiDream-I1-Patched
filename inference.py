@@ -7,7 +7,7 @@ from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
 from transformers import AutoTokenizer
-from auto_gptq import AutoGPTQForCausalLM
+from optimum.gptq import GPTQModelForCausalLM  # ✅ Use GPTQModel (future proof)
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
@@ -18,6 +18,7 @@ parser.add_argument("--resolution", type=str, default="1024x1024")
 parser.add_argument("--seed", type=int, default=-1)
 args = parser.parse_args()
 
+# ✅ Extract arguments
 model_type = args.model_type
 prompt = args.prompt
 output_path = args.output_path
@@ -81,11 +82,11 @@ def load_models(model_type):
         trust_remote_code=True
     )
 
-    text_encoder_4 = AutoGPTQForCausalLM.from_quantized(
+    text_encoder_4 = GPTQModelForCausalLM.from_pretrained(
         LLAMA_MODEL_NAME,
         token=token,
         trust_remote_code=True,
-        device="cuda",
+        device_map="cuda",
         torch_dtype=torch.float16
     )
 
