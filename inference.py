@@ -87,9 +87,16 @@ def load_models(model_type):
         device_map="auto",
         torch_dtype=torch.bfloat16,
         trust_remote_code=True,
-        attn_implementation="eager"   # ✅ JUST ADD THIS
-
+        attn_implementation="eager",   # ✅ JUST ADD THIS
+        model_max_length=77  # ✅ Important fix
     )
+    with torch.no_grad():
+        dummy = tokenizer_4(prompt, return_tensors="pt").to("cuda")
+        print(f"🧠 Prompt token length: {dummy['input_ids'].shape[1]}")
+        if dummy['input_ids'].shape[1] > 77:
+            print("⚠️ Prompt too long — may crash due to LLaMA max length. Consider trimming.")
+        encoder_out = text_encoder_4(**dummy, output_hidden_states=True)
+        print("✅ Encoder output shape:", encoder_out.hidden_states[-1].shape)
 
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
         config["path"],
@@ -126,7 +133,8 @@ def generate_image(pipe, model_type, prompt, resolution, seed):
         num_images_per_prompt=1,
         generator=generator
     ).images
-
+    # ✅ Debug line to inspect output tensor quality
+    print("📸 Image tensor std dev:", images[0].std())
     return images[0], seed
 
 # ✅ Main execution
