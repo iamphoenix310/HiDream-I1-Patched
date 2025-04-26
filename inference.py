@@ -9,8 +9,6 @@ from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscrete
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from torchvision import transforms
 
-
-
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_type", type=str, default="fast")
@@ -63,6 +61,7 @@ def load_models(model_type, prompt: str):
     if not token:
         raise EnvironmentError("❌ HUGGINGFACE_HUB_TOKEN not found!")
 
+    # ✅ Load Tokenizer
     tokenizer_4 = AutoTokenizer.from_pretrained(
         LLAMA_TOKENIZER_NAME,
         token=token,
@@ -71,40 +70,41 @@ def load_models(model_type, prompt: str):
         model_max_length=77
     )
 
+    # ✅ Load Text Encoder
     text_encoder_4 = AutoModelForCausalLM.from_pretrained(
         LLAMA_MODEL_NAME,
         token=token,
-        device_map="auto",
+        device_map="auto",   # let huggingface split across GPU automatically
         torch_dtype=torch.bfloat16,
         trust_remote_code=True
     )
     text_encoder_4.config.attn_implementation = "eager"
 
+    # ✅ Check Prompt Length
     with torch.no_grad():
         dummy = tokenizer_4(prompt, return_tensors="pt", truncation=False).to("cuda")
         token_length = dummy['input_ids'].shape[1]
         print(f"🧠 Prompt token length: {token_length}")
-
         if token_length > 77:
             print("⚠️ Prompt too long, trimming automatically to 77 tokens!")
             dummy = tokenizer_4(prompt, return_tensors="pt", truncation=True, max_length=77).to("cuda")
         encoder_out = text_encoder_4(**dummy, output_hidden_states=True)
         print("✅ Encoder output shape:", encoder_out.hidden_states[-1].shape)
 
-    # ✅ Here we manually load the transformer
+    # ✅ Load Transformer on CPU first
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
         config["path"],
         subfolder="transformer",
         torch_dtype=torch.bfloat16
-    ).to("cuda")
+    ).cpu()
 
-    # ✅ Manually load VAE
+    # ✅ Load VAE on CPU first
     from hi_diffusers.models.autoencoders.autoencoder_kl import AutoencoderKL
     vae = AutoencoderKL.from_pretrained(
         config["path"],
         subfolder="vae",
         torch_dtype=torch.bfloat16
-    ).to("cuda")
+    ).cpu()
 
     # ✅ Build the pipeline manually
     pipe = HiDreamImagePipeline(
@@ -118,12 +118,15 @@ def load_models(model_type, prompt: str):
         tokenizer_3=None,
         text_encoder_4=text_encoder_4,
         tokenizer_4=tokenizer_4,
-    ).to("cuda", torch_dtype=torch.bfloat16)
+    )
 
     pipe.transformer = transformer
 
-    return pipe, config
+    # ✅ Move components to CUDA after pipeline ready
+    pipe.vae = pipe.vae.to("cuda", torch_dtype=torch.bfloat16)
+    pipe.transformer = pipe.transformer.to("cuda", torch_dtype=torch.bfloat16)
 
+    return pipe, config
 
 def generate_image(pipe, model_type, prompt, resolution, seed):
     config = MODEL_CONFIGS[model_type]
@@ -143,15 +146,18 @@ def generate_image(pipe, model_type, prompt, resolution, seed):
         num_images_per_prompt=1,
         generator=generator
     )
-    # Add this globally once
+    # Analyze the image
     pil_to_tensor = transforms.ToTensor()
     tensor_img = pil_to_tensor(result.images[0])
     print("📸 Image tensor std dev:", tensor_img.std())
     return result.images[0], seed
 
-# ✅ Main execution
+# ✅ Main Execution
 print(f"🔧 Preparing HiDream with model type: {model_type}")
+torch.cuda.empty_cache()  # Extra safety
 pipe, _ = load_models(model_type, prompt)
+torch.cuda.empty_cache()  # Extra safety
+
 print("🖼 Generating image...")
 image, used_seed = generate_image(pipe, model_type, prompt, resolution, seed)
 
