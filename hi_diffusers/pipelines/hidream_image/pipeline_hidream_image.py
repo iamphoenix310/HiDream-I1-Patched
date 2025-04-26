@@ -718,17 +718,27 @@ class HiDreamImagePipeline(DiffusionPipeline, FromSingleFileMixin):
 
         if output_type == "latent":
             image = latents
-
         else:
             latents = (latents / self.vae.config.scaling_factor) + self.vae.config.shift_factor
-
             image = self.vae.decode(latents, return_dict=False)[0]
-            image = self.image_processor.postprocess(image, output_type=output_type)
-
+            image = (image / 2 + 0.5).clamp(0, 1)
+        
+            if output_type == "pil":
+                image = self.numpy_to_pil(image)
+        
         # Offload all models
         self.maybe_free_model_hooks()
-
+        
         if not return_dict:
             return (image,)
 
         return HiDreamImagePipelineOutput(images=image)
+    
+    def numpy_to_pil(self, images):
+        if isinstance(images, torch.Tensor):
+            images = images.detach().cpu().permute(0, 2, 3, 1).numpy()
+            images = (images * 255).round().astype("uint8")
+        from PIL import Image
+        pil_images = [Image.fromarray(image) for image in images]
+        return pil_images
+    
