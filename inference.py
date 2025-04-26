@@ -7,7 +7,7 @@ from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
 from transformers import AutoTokenizer
-from auto_gptq import AutoGPTQForCausalLM  # Needed for GPTQ models
+from auto_gptq import AutoGPTQForCausalLM  # ✅ Still needed, now with correct model
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
@@ -27,7 +27,7 @@ seed = args.seed
 
 # ✅ Model Paths
 MODEL_PREFIX = "azaneko"
-LLAMA_MODEL_NAME = "nvidia/Llama-3.1-Nemotron-Nano-8B-v1"
+LLAMA_MODEL_NAME = "OxxoCodes/Meta-Llama-3-8B-Instruct-GPTQ"
 
 MODEL_CONFIGS = {
     "dev": {
@@ -66,7 +66,7 @@ def parse_resolution(resolution_str):
     return options.get(resolution_str, (1024, 1024))
 
 def load_models(model_type):
-    print("✅ Loading model config:", model_type)
+    print(f"✅ Loading model config: {model_type}")
     config = MODEL_CONFIGS[model_type]
     scheduler = config["scheduler"](num_train_timesteps=1000, shift=config["shift"], use_dynamic_shifting=False)
 
@@ -83,14 +83,13 @@ def load_models(model_type):
         trust_remote_code=True
     )
 
-    # ✅ Load 4-bit quantized LLaMA model with AutoGPTQ
+    # ✅ Load quantized LLaMA model correctly with AutoGPTQ
     text_encoder_4 = AutoGPTQForCausalLM.from_quantized(
         LLAMA_MODEL_NAME,
-        token=token,
         use_safetensors=True,
         trust_remote_code=True,
-        device="cpu",  # ⬅️ Keep on CPU to avoid VRAM overflow
-        torch_dtype=torch.float32
+        device="cuda",           # ✅ Now put directly on GPU
+        torch_dtype=torch.float16 # ✅ Use fp16 for speed
     )
 
     # ✅ Load HiDream Transformer (quantized NF4)
