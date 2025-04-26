@@ -6,7 +6,7 @@ from hi_diffusers.pipelines.hidream_image.pipeline_hidream_image import HiDreamI
 from hi_diffusers.models.transformers.transformer_hidream_image import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
-from transformers import AutoModelForCausalLM, AutoTokenizer  # ✅ Only transformers
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
@@ -26,8 +26,8 @@ seed = args.seed
 
 # ✅ Model paths
 MODEL_PREFIX = "azaneko"
-LLAMA_MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"  # ✅ updated
-LLAMA_TOKENIZER_NAME = "meta-llama/Llama-3.1-8B-Instruct"  # ✅ updated
+LLAMA_MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
+LLAMA_TOKENIZER_NAME = "meta-llama/Llama-3.1-8B-Instruct"
 
 MODEL_CONFIGS = {
     "dev": {
@@ -65,7 +65,7 @@ def parse_resolution(resolution_str):
     }
     return options.get(resolution_str, (1024, 1024))
 
-def load_models(model_type):
+def load_models(model_type, prompt: str):
     print(f"✅ Loading model config: {model_type}")
     config = MODEL_CONFIGS[model_type]
     scheduler = config["scheduler"](num_train_timesteps=1000, shift=config["shift"], use_dynamic_shifting=False)
@@ -78,7 +78,8 @@ def load_models(model_type):
         LLAMA_TOKENIZER_NAME,
         token=token,
         use_fast=True,
-        trust_remote_code=True
+        trust_remote_code=True,
+        model_max_length=77  # ✅ Correct: tokenizer only
     )
 
     text_encoder_4 = AutoModelForCausalLM.from_pretrained(
@@ -86,15 +87,20 @@ def load_models(model_type):
         token=token,
         device_map="auto",
         torch_dtype=torch.bfloat16,
-        trust_remote_code=True,
-        attn_implementation="eager",   # ✅ JUST ADD THIS
-        model_max_length=77  # ✅ Important fix
+        trust_remote_code=True
     )
+    # ✅ Set attention impl after loading
+    text_encoder_4.config.attn_implementation = "eager"
+
+    # ✅ Handle token length smartly
     with torch.no_grad():
-        dummy = tokenizer_4(prompt, return_tensors="pt").to("cuda")
-        print(f"🧠 Prompt token length: {dummy['input_ids'].shape[1]}")
-        if dummy['input_ids'].shape[1] > 77:
-            print("⚠️ Prompt too long — may crash due to LLaMA max length. Consider trimming.")
+        dummy = tokenizer_4(prompt, return_tensors="pt", truncation=False).to("cuda")
+        token_length = dummy['input_ids'].shape[1]
+        print(f"🧠 Prompt token length: {token_length}")
+
+        if token_length > 77:
+            print("⚠️ Prompt too long, trimming automatically to 77 tokens!")
+            dummy = tokenizer_4(prompt, return_tensors="pt", truncation=True, max_length=77).to("cuda")
         encoder_out = text_encoder_4(**dummy, output_hidden_states=True)
         print("✅ Encoder output shape:", encoder_out.hidden_states[-1].shape)
 
@@ -124,7 +130,7 @@ def generate_image(pipe, model_type, prompt, resolution, seed):
 
     generator = torch.Generator("cuda").manual_seed(seed)
 
-    images = pipe(
+    result = pipe(
         prompt,
         height=height,
         width=width,
@@ -132,14 +138,13 @@ def generate_image(pipe, model_type, prompt, resolution, seed):
         num_inference_steps=config["num_inference_steps"],
         num_images_per_prompt=1,
         generator=generator
-    ).images
-    # ✅ Debug line to inspect output tensor quality
-    print("📸 Image tensor std dev:", images[0].std())
-    return images[0], seed
+    )
+    print("📸 Image tensor std dev:", result.images[0].std())
+    return result.images[0], seed
 
 # ✅ Main execution
 print(f"🔧 Preparing HiDream with model type: {model_type}")
-pipe, _ = load_models(model_type)
+pipe, _ = load_models(model_type, prompt)
 print("🖼 Generating image...")
 image, used_seed = generate_image(pipe, model_type, prompt, resolution, seed)
 
