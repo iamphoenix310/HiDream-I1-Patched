@@ -121,9 +121,9 @@ def load_models(model_type, prompt: str):
 
     pipe.transformer = transformer
 
-    # ✅ Move components to CUDA after pipeline ready
-    pipe.vae = pipe.vae.to("cuda", torch_dtype=torch.bfloat16)
-    pipe.transformer = pipe.transformer.to("cuda", torch_dtype=torch.bfloat16)
+    # ✅ Move components to CUDA with correct syntax
+    pipe.vae = pipe.vae.to(device="cuda", dtype=torch.bfloat16)
+    pipe.transformer = pipe.transformer.to(device="cuda", dtype=torch.bfloat16)
 
     return pipe, config
 
