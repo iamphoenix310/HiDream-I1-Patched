@@ -7,7 +7,7 @@ from hi_diffusers import HiDreamImageTransformer2DModel
 from hi_diffusers.schedulers.fm_solvers_unipc import FlowUniPCMultistepScheduler
 from hi_diffusers.schedulers.flash_flow_match import FlashFlowMatchEulerDiscreteScheduler
 from transformers import AutoTokenizer
-from auto_gptq import AutoGPTQForCausalLM  # ✅ Correct import
+from gptq import AutoGPTQForCausalLM
 
 # ✅ ARGUMENT PARSING
 parser = argparse.ArgumentParser()
