@@ -68,7 +68,7 @@ def load_models(model_type, prompt: str):
         token=token,
         use_fast=True,
         trust_remote_code=True,
-        model_max_length=77  # ✅ Correct: tokenizer only
+        model_max_length=77
     )
 
     text_encoder_4 = AutoModelForCausalLM.from_pretrained(
@@ -78,10 +78,8 @@ def load_models(model_type, prompt: str):
         torch_dtype=torch.bfloat16,
         trust_remote_code=True
     )
-    # ✅ Set attention impl after loading
     text_encoder_4.config.attn_implementation = "eager"
 
-    # ✅ Handle token length smartly
     with torch.no_grad():
         dummy = tokenizer_4(prompt, return_tensors="pt", truncation=False).to("cuda")
         token_length = dummy['input_ids'].shape[1]
@@ -93,22 +91,39 @@ def load_models(model_type, prompt: str):
         encoder_out = text_encoder_4(**dummy, output_hidden_states=True)
         print("✅ Encoder output shape:", encoder_out.hidden_states[-1].shape)
 
+    # ✅ Here we manually load the transformer
     transformer = HiDreamImageTransformer2DModel.from_pretrained(
         config["path"],
         subfolder="transformer",
         torch_dtype=torch.bfloat16
     ).to("cuda")
 
-    pipe = HiDreamImagePipeline.from_pretrained(
+    # ✅ Manually load VAE
+    from hi_diffusers.models.autoencoders.autoencoder_kl import AutoencoderKL
+    vae = AutoencoderKL.from_pretrained(
         config["path"],
-        scheduler=scheduler,
-        tokenizer_4=tokenizer_4,
-        text_encoder_4=text_encoder_4,
+        subfolder="vae",
         torch_dtype=torch.bfloat16
-    ).to("cuda", torch.bfloat16)
+    ).to("cuda")
+
+    # ✅ Build the pipeline manually
+    pipe = HiDreamImagePipeline(
+        scheduler=scheduler,
+        vae=vae,
+        text_encoder=None,
+        tokenizer=None,
+        text_encoder_2=None,
+        tokenizer_2=None,
+        text_encoder_3=None,
+        tokenizer_3=None,
+        text_encoder_4=text_encoder_4,
+        tokenizer_4=tokenizer_4,
+    ).to("cuda", torch_dtype=torch.bfloat16)
 
     pipe.transformer = transformer
+
     return pipe, config
+
 
 def generate_image(pipe, model_type, prompt, resolution, seed):
     config = MODEL_CONFIGS[model_type]
